@@ -73,7 +73,7 @@ namespace exttr::op {
 #define BIN_OP_DETECTOR(NAME, OPERATION)                                                                                                \
     template <typename TResult, typename TLhs, typename TRhs>                                                                           \
     struct NAME                                                                                                                         \
-        {                                                                                                                               \
+    {                                                                                                                                   \
         private:                                                                                                                        \
             static void detect(...);                                                                                                    \
             template <typename TL, typename TR>                                                                                         \
@@ -133,7 +133,7 @@ BIN_OP_DETECTOR(is_b_geq, >=)
 #define UN_PRE_OP_DETECTOR(NAME, OPERATION)                                                                     \
     template <typename TResult, typename TRhs>                                                                  \
     struct NAME                                                                                                 \
-        {                                                                                                       \
+    {                                                                                                           \
         private:                                                                                                \
             static void detect(...);                                                                            \
             template <typename TR>                                                                              \
@@ -174,7 +174,7 @@ UN_PRE_OP_DETECTOR(is_addressable, &)
 #define UN_POS_OP_DETECTOR(NAME, OPERATION)                                                                     \
     template <typename TResult, typename TRhs>                                                                  \
     struct NAME                                                                                                 \
-        {                                                                                                       \
+    {                                                                                                           \
         private:                                                                                                \
             static void detect(...);                                                                            \
             template <typename TR>                                                                              \
@@ -195,7 +195,7 @@ UN_POS_OP_DETECTOR(is_pos_decrementable, --)
 #define COMPARISON_DETECTOR(NAME, OPERATION)                                                                                        \
     template <typename TLhs, typename TRhs>                                                                                         \
     struct NAME                                                                                                                     \
-        {                                                                                                                           \
+    {                                                                                                                               \
         private:                                                                                                                    \
             static void detect(...);                                                                                                \
             template <typename TL, typename TR>                                                                                     \
