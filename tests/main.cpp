@@ -10,6 +10,11 @@ using TestFunc = std::function<bool()>;
 const std::unordered_map<std::string, TestFunc> ALL_TESTS = {
     {"testBinOpsTrivial", &testBinOpsTrivial},
     {"testBinMutOpsTrivial", &testBinMutOpsTrivial},
+    {"testAssignmentOpsTrivial", &testAssignmentOpsTrivial},
+    {"testUnPreOpsTrivial", &testUnPreOpsTrivial},
+    {"testUnPostOpsTrivial", &testUnPostOpsTrivial},
+    {"testComparisonOpsTrivial", &testComparisonOpsTrivial},
+    {"testOtherOps", &testOtherOps},
 };
 
 class Main
