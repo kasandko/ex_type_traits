@@ -9,6 +9,7 @@
 using TestFunc = std::function<bool()>;
 const std::unordered_map<std::string, TestFunc> ALL_TESTS = {
     {"testBinOpsTrivial", &testBinOpsTrivial},
+    {"testBinMutOpsTrivial", &testBinMutOpsTrivial},
 };
 
 class Main

@@ -39,6 +39,10 @@ Prefix unary ops:
 --a: is_pre_decrementable
 !a: is_inversible
 ~a: is_bit_inversible
+*a: is_indirect
+&a: is_addressable
+
+// Assignment ops:
 a += b: is_a_summative
 a -= b: is_a_subtractive
 a *= b: is_a_multiplicative
@@ -49,8 +53,6 @@ a |= b: is_a_bit_disjunctionable
 a ^= b: is_a_bit_ex_disjunctionable
 a <<= b: is_a_lshiftable
 a >>= b: is_a_rshiftable
-*a: is_indirect
-&a: is_addressable
 
 Postfix unary ops:
 a++: is_pos_incrementable
@@ -69,19 +71,22 @@ a, b:
 
 namespace exttr::op {
 
+template <typename T>
+std::add_lvalue_reference_t<T> declref() noexcept;
+
 #undef BIN_OP_DETECTOR
-#define BIN_OP_DETECTOR(NAME, OPERATION)                                                                                                \
-    template <typename TResult, typename TLhs, typename TRhs>                                                                           \
-    struct NAME                                                                                                                         \
-    {                                                                                                                                   \
-        private:                                                                                                                        \
-            static void detect(...);                                                                                                    \
-            template <typename TL, typename TR>                                                                                         \
-            static decltype(std::declval<TL>() OPERATION std::declval<TR>()) detect(const TL&, const TR&);                              \
-        public:                                                                                                                         \
-            static constexpr bool value = std::is_same<TResult, decltype(detect(std::declval<TLhs>(), std::declval<TRhs>()))>::value;   \
-    };                                                                                                                                  \
-    template <typename TResult, typename TLhs, typename TRhs>                                                                           \
+#define BIN_OP_DETECTOR(NAME, OPERATION)                                                                                            \
+    template <typename TResult, typename TLhs, typename TRhs>                                                                       \
+    struct NAME                                                                                                                     \
+    {                                                                                                                               \
+    private:                                                                                                                        \
+        static void detect(...);                                                                                                    \
+        template <typename TL, typename TR>                                                                                         \
+        static decltype(std::declval<TL>() OPERATION std::declval<TR>()) detect(const TL&, const TR&);                              \
+    public:                                                                                                                         \
+        static constexpr bool value = std::is_same<TResult, decltype(detect(std::declval<TLhs>(), std::declval<TRhs>()))>::value;   \
+    };                                                                                                                              \
+    template <typename TResult, typename TLhs, typename TRhs>                                                                       \
     inline constexpr bool NAME##_v = NAME<TResult, TLhs, TRhs>::value;
 
 // Is the binary sum operation available?
@@ -129,19 +134,69 @@ BIN_OP_DETECTOR(is_b_geq, >=)
 #undef BIN_OP_DETECTOR
 
 
+#undef BIN_MUT_OP_DETECTOR
+#define BIN_MUT_OP_DETECTOR(NAME, OPERATION)                                                                                    \
+    template <typename TResult, typename TLhs, typename TRhs>                                                                   \
+    struct NAME                                                                                                                 \
+    {                                                                                                                           \
+    private:                                                                                                                    \
+        static void detect(...);                                                                                                \
+        template <typename TL, typename TR>                                                                                     \
+        static decltype(declref<TL>() OPERATION std::declval<TR>()) detect(TL&, const TR&);                                     \
+    public:                                                                                                                     \
+        static constexpr bool value = std::is_same<TResult, decltype(detect(declref<TLhs>(), std::declval<TRhs>()))>::value;    \
+    };                                                                                                                          \
+    template <typename TResult, typename TLhs, typename TRhs>                                                                   \
+    inline constexpr bool NAME##_v = NAME<TResult, TLhs, TRhs>::value;
+
+BIN_MUT_OP_DETECTOR(is_ab_summative, +=)
+BIN_MUT_OP_DETECTOR(is_ab_subtractive, -=)
+BIN_MUT_OP_DETECTOR(is_ab_multiplicative, *=)
+BIN_MUT_OP_DETECTOR(is_ab_dividable, /=)
+BIN_MUT_OP_DETECTOR(is_ab_modulative, %=)
+BIN_MUT_OP_DETECTOR(is_ab_bit_conjunctionable, &=)
+BIN_MUT_OP_DETECTOR(is_ab_bit_disjunctionable, |=)
+BIN_MUT_OP_DETECTOR(is_ab_bit_ex_disjunctionable, ^=)
+BIN_MUT_OP_DETECTOR(is_ab_lshiftable, <<=)
+BIN_MUT_OP_DETECTOR(is_ab_rshiftable, >>=)
+
+#undef BIN_MUT_OP_DETECTOR
+
+
+#undef ASSIGNMENT_OP_DETECTOR
+#define ASSIGNMENT_OP_DETECTOR(NAME, BASE_NAME)                                 \
+    template <typename TResult, typename TRhs>                                  \
+    struct NAME : public BASE_NAME<TResult&, TResult, TRhs> {};                 \
+    template <typename TResult, typename TRhs>                                  \
+    inline constexpr bool NAME##_v = BASE_NAME##_v<TResult&, TResult, TRhs>;
+
+ASSIGNMENT_OP_DETECTOR(is_a_summative, is_ab_summative)
+ASSIGNMENT_OP_DETECTOR(is_a_subtractive, is_ab_subtractive)
+ASSIGNMENT_OP_DETECTOR(is_a_multiplicative, is_ab_multiplicative)
+ASSIGNMENT_OP_DETECTOR(is_a_dividable, is_ab_dividable)
+ASSIGNMENT_OP_DETECTOR(is_a_modulative, is_ab_modulative)
+ASSIGNMENT_OP_DETECTOR(is_a_bit_conjunctionable, is_ab_bit_conjunctionable)
+ASSIGNMENT_OP_DETECTOR(is_a_bit_disjunctionable, is_ab_bit_disjunctionable)
+ASSIGNMENT_OP_DETECTOR(is_a_bit_ex_disjunctionable, is_ab_bit_ex_disjunctionable)
+ASSIGNMENT_OP_DETECTOR(is_a_lshiftable, is_ab_lshiftable)
+ASSIGNMENT_OP_DETECTOR(is_a_rshiftable, is_ab_rshiftable)
+
+#undef ASSIGNMENT_OP_DETECTOR
+
+
 #undef UN_PRE_OP_DETECTOR
-#define UN_PRE_OP_DETECTOR(NAME, OPERATION)                                                                     \
-    template <typename TResult, typename TRhs>                                                                  \
-    struct NAME                                                                                                 \
-    {                                                                                                           \
-        private:                                                                                                \
-            static void detect(...);                                                                            \
-            template <typename TR>                                                                              \
-            static decltype(OPERATION std::declval<TR>()) detect(const TR&);                                    \
-        public:                                                                                                 \
-            static constexpr bool value = std::is_same<TResult, decltype(detect(std::declval<TRhs>()))>::value; \
-    };                                                                                                          \
-    template <typename TResult, typename TRhs>                                                                  \
+#define UN_PRE_OP_DETECTOR(NAME, OPERATION)                                                                 \
+    template <typename TResult, typename TRhs>                                                              \
+    struct NAME                                                                                             \
+    {                                                                                                       \
+    private:                                                                                                \
+        static void detect(...);                                                                            \
+        template <typename TR>                                                                              \
+        static decltype(OPERATION std::declval<TR>()) detect(const TR&);                                    \
+    public:                                                                                                 \
+        static constexpr bool value = std::is_same<TResult, decltype(detect(std::declval<TRhs>()))>::value; \
+    };                                                                                                      \
+    template <typename TResult, typename TRhs>                                                              \
     inline constexpr bool NAME##_v = NAME<TResult, TRhs>::value;
 
 UN_PRE_OP_DETECTOR(is_positvable, +)
@@ -153,17 +208,6 @@ UN_PRE_OP_DETECTOR(is_pre_decrementable, --)
 UN_PRE_OP_DETECTOR(is_bit_inversible, ~)
 UN_PRE_OP_DETECTOR(is_inversible, !)
 
-UN_PRE_OP_DETECTOR(is_a_summative, +=)
-UN_PRE_OP_DETECTOR(is_a_subtractive, -=)
-UN_PRE_OP_DETECTOR(is_a_multiplicative, *=)
-UN_PRE_OP_DETECTOR(is_a_dividable, /=)
-UN_PRE_OP_DETECTOR(is_a_modulative, %=)
-UN_PRE_OP_DETECTOR(is_a_bit_conjunctionable, &=)
-UN_PRE_OP_DETECTOR(is_a_bit_disjunctionable, |=)
-UN_PRE_OP_DETECTOR(is_a_bit_ex_disjunctionable, |=)
-UN_PRE_OP_DETECTOR(is_a_lshiftable, <<=)
-UN_PRE_OP_DETECTOR(is_a_rshiftable, >>=)
-
 UN_PRE_OP_DETECTOR(is_indirect, *)
 UN_PRE_OP_DETECTOR(is_addressable, &)
 
@@ -171,18 +215,18 @@ UN_PRE_OP_DETECTOR(is_addressable, &)
 
 
 #undef UN_POS_OP_DETECTOR
-#define UN_POS_OP_DETECTOR(NAME, OPERATION)                                                                     \
-    template <typename TResult, typename TRhs>                                                                  \
-    struct NAME                                                                                                 \
-    {                                                                                                           \
-        private:                                                                                                \
-            static void detect(...);                                                                            \
-            template <typename TR>                                                                              \
-            static decltype(std::declval<TR>() OPERATION) detect(const TR&);                                    \
-        public:                                                                                                 \
-            static constexpr bool value = std::is_same<TResult, decltype(detect(std::declval<TRhs>()))>::value; \
-    };                                                                                                          \
-    template <typename TResult, typename TRhs>                                                                  \
+#define UN_POS_OP_DETECTOR(NAME, OPERATION)                                                                 \
+    template <typename TResult, typename TRhs>                                                              \
+    struct NAME                                                                                             \
+    {                                                                                                       \
+    private:                                                                                                \
+        static void detect(...);                                                                            \
+        template <typename TR>                                                                              \
+        static decltype(std::declval<TR>() OPERATION) detect(const TR&);                                    \
+    public:                                                                                                 \
+        static constexpr bool value = std::is_same<TResult, decltype(detect(std::declval<TRhs>()))>::value; \
+    };                                                                                                      \
+    template <typename TResult, typename TRhs>                                                              \
     inline constexpr bool NAME##_v = NAME<TResult, TRhs>::value;
 
 UN_POS_OP_DETECTOR(is_pos_incrementable, ++)
@@ -192,40 +236,32 @@ UN_POS_OP_DETECTOR(is_pos_decrementable, --)
 
 
 #undef COMPARISON_DETECTOR
-#define COMPARISON_DETECTOR(NAME, OPERATION)                                                                                        \
-    template <typename TLhs, typename TRhs>                                                                                         \
-    struct NAME                                                                                                                     \
-    {                                                                                                                               \
-        private:                                                                                                                    \
-            static void detect(...);                                                                                                \
-            template <typename TL, typename TR>                                                                                     \
-            static decltype(std::declval<TL>() OPERATION std::declval<TR>()) detect(const TL&, const TR&);                          \
-        public:                                                                                                                     \
-            static constexpr bool value = std::is_same<bool, decltype(detect(std::declval<TLhs>(), std::declval<TRhs>()))>::value;  \
-    };                                                                                                                              \
-    template <typename TLhs, typename TRhs>                                                                                         \
-    inline constexpr bool NAME##_v = NAME<TLhs, TRhs>::value;
+#define COMPARISON_DETECTOR(NAME, BASE_NAME)                            \
+template <typename TLhs, typename TRhs>                                 \
+struct NAME : public BASE_NAME<bool, TLhs, TRhs> {};                    \
+template <typename TLhs, typename TRhs>                                 \
+    inline constexpr bool NAME##_v = BASE_NAME##_v<bool, TLhs, TRhs>;
 
-COMPARISON_DETECTOR(is_equ, ==)
-COMPARISON_DETECTOR(is_neq, !=)
-COMPARISON_DETECTOR(is_lss, <)
-COMPARISON_DETECTOR(is_leq, <=)
-COMPARISON_DETECTOR(is_gtr, >)
-COMPARISON_DETECTOR(is_geq, >=)
+COMPARISON_DETECTOR(is_equ, is_b_equ)
+COMPARISON_DETECTOR(is_neq, is_b_neq)
+COMPARISON_DETECTOR(is_lss, is_b_lss)
+COMPARISON_DETECTOR(is_leq, is_b_leq)
+COMPARISON_DETECTOR(is_gtr, is_b_gtr)
+COMPARISON_DETECTOR(is_geq, is_b_geq)
 
 #undef COMPARISON_DETECTOR
 
 // Is the comparison operations (>, <, >=, <=, ==, !=) available?
-template <typename TLhs, typename TLhs>
+template <typename TLhs, typename TRhs>
 struct is_comparable
 {
     static constexpr bool value =
-        is_equ<TLhs, TLhs>::value &&
-        is_neq<TLhs, TLhs>::value &&
-        is_lss<TLhs, TLhs>::value &&
-        is_leq<TLhs, TLhs>::value &&
-        is_gtr<TLhs, TLhs>::value &&
-        is_geq<TLhs, TLhs>::value;
+        is_equ<TLhs, TRhs>::value &&
+        is_neq<TLhs, TRhs>::value &&
+        is_lss<TLhs, TRhs>::value &&
+        is_leq<TLhs, TRhs>::value &&
+        is_gtr<TLhs, TRhs>::value &&
+        is_geq<TLhs, TRhs>::value;
 };
 template <typename TLhs, typename TRhs>
 inline constexpr bool is_comparable_v = is_comparable<TLhs, TRhs>::value;
