@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 namespace exttr::func {
 
 template <typename TCont>
@@ -14,5 +16,11 @@ private:
 public:
 	static constexpr bool value = !std::is_same<void, decltype(detect(std::declval<TCont>()))>::value;
 };
+
+template <typename T>
+std::add_lvalue_reference_t<T> declref() noexcept;
+
+template <typename T>
+std::add_pointer_t<T> declptr() noexcept;
 
 } // exttr::func
